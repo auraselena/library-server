@@ -15,6 +15,8 @@ const { usersRouter, booksRouter } = require("./src/routers");
 app.use("/users", usersRouter);
 app.use("/books", booksRouter);
 
+app.use(express.static("src/public"));
+
 app.listen(PORT, async (error) => {
   if (error) {
     console.log(`Error`);

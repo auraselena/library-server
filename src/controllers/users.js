@@ -1,6 +1,10 @@
 const db = require("../../models/index");
 const users = db.users;
 const bcrypt = require("bcrypt");
+const handlebars = require("handlebars");
+const fs = require("fs").promises;
+const transporter = require("../../config/nodemailer");
+const { createToken } = require("../../config/encript");
 
 module.exports = {
   signUp: async (req, res) => {
@@ -11,15 +15,31 @@ module.exports = {
         where: { email },
         raw: true,
       });
-      console.log("findEmail", findEmail);
 
       if (findEmail.length > 0) {
         return res.status(403).send({
           success: false,
-          message: "E-mail address has been used. Please use another email.",
+          message: "E-mail address has been used.",
         });
       } else {
         const userData = await users.create({ email });
+
+        const template = await fs.readFile("./src/template/sign-up.html", "utf-8");
+
+        const compiledTemplate = handlebars.compile(template);
+        const signUpTemplate = compiledTemplate({
+          registrationLink: `http://localhost:8000/users/verify`,
+          email,
+          token: createToken({ id: userData.id }),
+        });
+
+        await transporter.sendMail({
+          from: `LEXICON <"sasageyawn@gmail.com">`,
+          to: email,
+          subject: "Confirm Your E-mail Address",
+          html: signUpTemplate,
+        });
+
         return res.send({
           success: true,
           message: "Account created.",
